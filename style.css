@@ -1,0 +1,30 @@
+body {
+    background-image: url('/vivi/im/ss.gif');
+    background-repeat: no-repeat;
+    height: 600px;
+    width: 100px;
+    background-position: center;
+    z-index:1
+}
+.grid-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-gap: 450px;
+}
+.grid-item {
+    height: 449px;
+    width: 599px;
+}
+.grid-item img {
+    height: 449px;
+    width: 550px;
+}
+.tt{
+   
+    background-position: fixed;
+     
+    margin-left: 80%;
+    transform: translateY(+110%);   
+    z-index:2
+}
+
