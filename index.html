@@ -1,12 +1,676 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>我的第一個網頁</title>
+    <title>資訊網路題庫自我評量系統</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: #f4f6f9;
+            color: #333;
+            margin: 0;
+            padding: 15px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            font-size: 1.5rem;
+        }
+        .question-card {
+            border-bottom: 1px solid #eee;
+            padding: 15px 0;
+        }
+        .question-title {
+            font-weight: bold;
+            margin-bottom: 10px;
+            font-size: 1rem;
+        }
+        .options label {
+            display: block;
+            margin: 8px 0;
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 5px;
+            background: #f8f9fa;
+            transition: background 0.2s;
+        }
+        .options label:hover {
+            background: #e9ecef;
+        }
+        input[type="text"] {
+            width: 100%;
+            padding: 8px;
+            box-sizing: border-box;
+            margin-top: 5px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        .submit-btn {
+            display: block;
+            width: 100%;
+            padding: 12px;
+            background: #007bff;
+            color: white;
+            border: none;
+            font-size: 1.1rem;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+        .submit-btn:hover {
+            background: #0056b3;
+        }
+        .result-box {
+            margin-top: 20px;
+            padding: 15px;
+            background: #e2f0d9;
+            border-radius: 5px;
+            display: none;
+        }
+        .history-section {
+            margin-top: 30px;
+            border-top: 2px dashed #ccc;
+            padding-top: 20px;
+        }
+        .history-item {
+            background: #fdfdfd;
+            border: 1px solid #ddd;
+            padding: 10px 15px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+        }
+        .correct { color: #28a745; font-weight: bold; }
+        .wrong { color: #dc3545; font-weight: bold; }
+        .ans-explain {
+            font-size: 0.9rem;
+            color: #666;
+            margin-top: 5px;
+        }
+    </style>
 </head>
 <body>
-<h1>我的第一個網頁</h1>
+
+<div class="container">
+    <h1>資訊網路（統整版）線上測驗</h1>
+    <form id="quizForm">
+        <div id="questionsContainer"></div>
+        <button type="button" class="submit-btn" onclick="submitQuiz()">交卷並檢查</button>
+    </form>
+
+    <div id="currentResult" class="result-box"></div>
+
+    <div class="history-section">
+        <h3>歷史考試紀錄</h3>
+        <div id="historyContainer">尚無考試紀錄</div>
+    </div>
+</div>
+
+<script>
+// 完整題庫資料
+const quizData = [
+    {
+        q: "三大電網指的是哪三個網路",
+        type: "checkbox",
+        options: {A: "電信網(Telcom)", B: "有線電視網(Cable)", C: "電腦網路", D: "郵政網路(飛鴿傳輸)", E: "烽火台", F: "人與人的溝通"},
+        answer: ["A", "B", "C"]
+    },
+    {
+        q: "在各種電腦網路的分類項目下，下列哪幾種網路是屬於以規模方式來進行分類的網路?",
+        type: "checkbox",
+        options: {A: "區域網路(Local Area Network, LAN)", B: "廣域網路(Wide Area Network, WAN)", C: "都會網路(Metropolitan Area Network, MAN)", D: "開放式網路(Open Network)", E: "封閉式網路(Closed Network)", F: "主從式架構(Client-Server Model)", G: "對等式架構(Peer-to-Peer Model)", H: "公開網路(Public Network)", I: "私有網路(Private Network)"},
+        answer: ["A", "B", "C"]
+    },
+    {
+        q: "在各種電腦網路的分類項目下，網際網路(Internet)屬於哪幾類的網路?",
+        type: "checkbox",
+        options: {A: "區域網路(Local Area Network, LAN)", B: "廣域網路(Wide Area Network, WAN)", C: "都會網路(Metropolitan Area Network, MAN)", D: "開放式網路(Open Network)", E: "封閉式網路(Closed Network)", F: "主從式架構(Client-Server Model)", G: "對等式架構(Peer-to-Peer Model)", H: "公開網路(Public Network)", I: "私有網路(Private Network)"},
+        answer: ["B", "D", "F"]
+    },
+    {
+        q: "資管系的網路比較偏向於哪一類的網路?",
+        type: "radio",
+        options: {A: "個人網路(Personal Area Network, PAN)", B: "區域網路(Local Area Network, LAN)", C: "都會網路(Metropolitan Area Network, MAN)", D: "廣域網路(Wide Area Network, WAN)"},
+        answer: ["B"]
+    },
+    {
+        q: "Internet上的各種服務器提供各類的服務，其設計上係採用哪種架構?",
+        type: "radio",
+        options: {A: "主從式架構(Client-Server Model)", B: "對等式架構(Peer-to-Peer Model)", C: "網路芳鄰架構(Neighborhood Model)", D: "私有架構(Private Model)"},
+        answer: ["A"]
+    },
+    {
+        q: "在網路協定分層模組中,當每一層要將資料往下一層傳送前會在資料的標頭(header)加上額外的資訊,稱為",
+        type: "radio",
+        options: {A: "封裝", B: "解封裝", C: "簽章", D: "解密", E: "加密"},
+        answer: ["A"]
+    },
+    {
+        q: "通常將資料連結層的封包稱為什麼?",
+        type: "radio",
+        options: {A: "訊框(frame)", B: "表頭(header)", C: "資料報(datagram)", D: "區段(segment)"},
+        answer: ["A"]
+    },
+    {
+        q: "下列何者不屬於 DoD 模型的優點？",
+        type: "radio",
+        options: {A: "分工合作", B: "對等交談", C: "加速傳遞", D: "逐層處理"},
+        answer: ["C"]
+    },
+    {
+        q: "DoD模型的應用層實際上是OSI模型的哪些層。",
+        type: "radio",
+        options: {A: "第一、二、三層", B: "第二、三、四層", C: "第五、六、七層", D: "哪一層都可以"},
+        answer: ["C"]
+    },
+    {
+        q: "OSI網路層最主要的工作是什麼?",
+        type: "radio",
+        options: {A: "資料封包保證送達", B: "定義收送的電壓大小", C: "定址與路由", D: "提供資料流介面"},
+        answer: ["C"]
+    },
+    {
+        q: "網際網路上的TCP/IP位於OSI模型的哪一層",
+        type: "radio",
+        options: {A: "第二、三層", B: "哪一層都可以", C: "第三、四層", D: "第一、二層"},
+        answer: ["C"]
+    },
+    {
+        q: "下列 OSI 模型中何者位於 Frame Relay 裡",
+        type: "radio",
+        options: {A: "鏈結層", B: "會議層", C: "表達層", D: "應用層"},
+        answer: ["A"]
+    },
+    {
+        q: "路由器最少必須能解讀封包在OSI 模型哪一層的資訊。？",
+        type: "radio",
+        options: {A: "第1 層(實體層)", B: "第3 層(網路層)", C: "第2 層(鏈結層)", D: "第4 層(傳輸層)"},
+        answer: ["B"]
+    },
+    {
+        q: "OSI 模型將加密與解密定義為哪一層的工作？",
+        type: "radio",
+        options: {A: "傳輸層", B: "表達層", C: "應用層", D: "網路層"},
+        answer: ["B"]
+    },
+    {
+        q: "下列關於 DoD 網路模型的敘述, 何者為是？",
+        type: "radio",
+        options: {A: "DoD 模型的傳輸層中, 最具代表性的是 IP 通訊協定", B: "DoD 網路模型共分為七層", C: "DoD 網路模型和 OSI 網路模型有各自的架構, 但仍能互相對應", D: "TCP/IP 通訊協定是遵循 DoD 網路模型發展出來的"},
+        answer: ["C"]
+    },
+    {
+        q: "在 DoD 模型中下列何者不屬於連結層的工作？",
+        type: "radio",
+        options: {A: "制訂 MAC Method(方法)", B: "加密", C: "偵錯", D: "同步"},
+        answer: ["B"]
+    },
+    {
+        q: "在ISO RM中,提供可靠性傳輸的功能是屬於哪一層的功能?",
+        type: "radio",
+        options: {A: "表達層(Presentation)", B: "對話層(Session)", C: "傳輸層(Transport)", D: "網路層(Network)", E: "資料連結層(Data Link)", F: "應用層(Application)"},
+        answer: ["C"]
+    },
+    {
+        q: "在ISO RM中,提供資料壓縮與加解密處理的功能是屬於哪一層的功能?",
+        type: "radio",
+        options: {A: "對話層(Session)", B: "網路層(Network)", C: "傳輸層(Transport)", D: "應用層(Application)", E: "表達層(Presentation)", F: "資料連結層(Data Link)"},
+        answer: ["E"]
+    },
+    {
+        q: "關於 OSI 模型，下列敘述何者正確？",
+        type: "radio",
+        options: {A: "最上層是會議層", B: "最底層是鏈結層", C: "網路層在傳輸層之上", D: "鏈結層在網路層之下"},
+        answer: ["D"]
+    },
+    {
+        q: "下列何者為100BaseT與1000BaseT最大的差異在",
+        type: "radio",
+        options: {A: "接頭規格", B: "每段長度", C: "線材規格", D: "傳輸速度"},
+        answer: ["D"]
+    },
+    {
+        q: "許多長距離傳輸系統喜歡採用調變技術傳送資料,請問此技術是透過什麼來傳遞信號?",
+        type: "radio",
+        options: {A: "Frequency(頻率)", B: "Carrier(載波)", C: "Voltage(電壓)", D: "Phase(相位)"},
+        answer: ["B"]
+    },
+    {
+        q: "倘若有一5KHz類比訊號欲進行數位化處理，則其取樣頻率至少需要多少才可以無失真的還原?",
+        type: "radio",
+        options: {A: "20KHz", B: "10KHz", C: "64KHz", D: "4KHz", E: "5KHz"},
+        answer: ["B"]
+    },
+    {
+        q: "下列何種傳輸媒介最容易受到雜訊干擾?(單選)",
+        type: "radio",
+        options: {A: "STP", B: "Coaxial cable", C: "Fiber", D: "UTP"},
+        answer: ["D"]
+    },
+    {
+        q: "Delta modulation亦為類比(Analog)訊號轉換為數位(Digital)訊號的技術，它具有什麼缺點?",
+        type: "radio",
+        options: {A: "計算較耗資源，現因硬體技術提昇，已逐漸普及", B: "紀錄的資料量較少", C: "有錯誤發生時，會造成大量資料錯誤", D: "計算太過複雜"},
+        answer: ["C"]
+    },
+    {
+        q: "如何定義類比(Analog)訊號的頻寬(Bandwidth)",
+        type: "radio",
+        options: {A: "有效的傳輸量", B: "最高頻率與最低頻率的差", C: "傳輸速度", D: "以最大波長計"},
+        answer: ["B"]
+    },
+    {
+        q: "下列何者採用並行式的傳輸方式",
+        type: "radio",
+        options: {A: "RS-232", B: "網路卡", C: "LPT印表機", D: "USB硬碟"},
+        answer: ["C"]
+    },
+    {
+        q: "1000BaseT係使用哪種標準接頭?",
+        type: "radio",
+        options: {A: "RJ-45", B: "RJ-11", C: "RG-11", D: "RG-45"},
+        answer: ["A"]
+    },
+    {
+        q: "無線的通訊環境中，與有線網路比較，哪些項目正確?(複選)",
+        type: "checkbox",
+        options: {A: "容易受干擾", B: "傳輸速率高", C: "無法偵測訊號發生碰撞", D: "傳輸距離較遠"},
+        answer: ["A", "C"]
+    },
+    {
+        q: "將類比訊號(Analog)進行調變(Modulation)的技術有哪些?",
+        type: "checkbox",
+        options: {A: "Amplitude Modulation", B: "Phase Modulation", C: "Code Modulation", D: "Frequency Modulation"},
+        answer: ["A", "B", "D"]
+    },
+    {
+        q: "利用雙絞線(Twisted pair)來傳遞訊號，每一區段的最大傳送距離為",
+        type: "radio",
+        options: {A: "200m", B: "500m", C: "100m", D: "50m", E: "185m"},
+        answer: ["C"]
+    },
+    {
+        q: "若一具有兩階數位訊號的系統可以傳送1000 Baud，問其傳輸速度為多少bps?",
+        type: "radio",
+        options: {A: "1000", B: "2000", C: "1500", D: "500"},
+        answer: ["A"]
+    },
+    {
+        q: "下列哪種Transmission media在傳輸端與接收端之間不能有任何遮擋",
+        type: "radio",
+        options: {A: "雷射光", B: "無線電", C: "藍芽", D: "人造衛星"},
+        answer: ["A"]
+    },
+    {
+        q: "將類比(Analog)訊號以PCM方法轉換為數位(Digital)訊號不須經過那個模組來處理",
+        type: "radio",
+        options: {A: "取樣(Sampling)", B: "量化(Quantization)", C: "編碼(Encoding)", D: "去雜訊(Denoise)"},
+        answer: ["D"]
+    },
+    {
+        q: "以下何者不是區域網路常會使用之傳輸媒體?(單選)",
+        type: "radio",
+        options: {A: "光纖(Fiber-optics)", B: "紅外線(Infrared)", C: "同軸電纜(Coaxial cable)", D: "雙絞線(Twisted-wired pairs)"},
+        answer: ["B"]
+    },
+    {
+        q: "下列何者係使用半雙工的方式傳送資料",
+        type: "radio",
+        options: {A: "電話", B: "警用無線電", C: "收音機", D: "電視機"},
+        answer: ["B"]
+    },
+    {
+        q: "下列傳輸媒介中，何者的Transmission rate (傳送速率)最快(即頻寬最大) ?",
+        type: "radio",
+        options: {A: "10BaseT", B: "10Base5", C: "10BaseF", D: "一樣大", E: "10Base2"},
+        answer: ["D"]
+    },
+    {
+        q: "請問頻寬的單位有哪些",
+        type: "checkbox",
+        options: {A: "Voltage(伏特)", B: "Hz(赫茲)", C: "Baud Rate(鮑率)", D: "Phase(相位)", E: "Amplitude(振幅)", F: "bps(bit/second)"},
+        answer: ["B", "C", "F"]
+    },
+    {
+        q: "Quadrature Amplitude Modulation(QAM)係採用哪兩種調變方法達成提高效能的目的?",
+        type: "checkbox",
+        options: {A: "Phase shift keying(PSK)", B: "Frequency shift keying(FSK)", C: "Amplitude shift keying(ASK)", D: "Code modulation(CD)", E: "Frequency modulation(FM)"},
+        answer: ["A", "C"]
+    },
+    {
+        q: "下列何者為10Base5與10Base2的差異?",
+        type: "checkbox",
+        options: {A: "每段長度", B: "傳輸速度", C: "接頭規格", D: "線材規格"},
+        answer: ["A", "C", "D"]
+    },
+    {
+        q: "數據機屬於下列哪種設備",
+        type: "radio",
+        options: {A: "DCE", B: "DSE", C: "以上皆非", D: "DTE"},
+        answer: ["A"]
+    },
+    {
+        q: "下列哪種編碼方式可以讓接收端與傳送端達成同步",
+        type: "radio",
+        options: {A: "MLT-3", B: "NRZI", C: "NRZ", D: "Manchester"},
+        answer: ["D"]
+    },
+    // 簡答/計算題轉化為填空
+    {
+        q: "【ErrorControl】傳送資料\"11100100\"採用 Odd Parity check (1 Byte)，總共應送出多少位元？",
+        type: "text",
+        answer: "9"
+    },
+    {
+        q: "【ErrorControl】傳送資料\"11100100\"採用 Odd Parity check (1 Byte)，送出的資料為何？",
+        type: "text",
+        answer: "111001001"
+    },
+    {
+        q: "【ErrorControl】傳送資料\"11100100\"採用 4 bit Checksum (1 Byte)，總共應送出多少位元？",
+        type: "text",
+        answer: "12"
+    },
+    {
+        q: "【ErrorControl】傳送資料\"11100100\"採用 4 bit Checksum (1 Byte)，送出的資料為何？",
+        type: "text",
+        answer: "111001001100"
+    },
+    {
+        q: "【ErrorControl】傳送資料\"11100100\"採用 CRC (x3 + x + 1) (1 Byte)，總共應送出多少位元？",
+        type: "text",
+        answer: "11"
+    },
+    {
+        q: "【ErrorControl】傳送資料\"11100100\"採用 CRC (x3 + x + 1) (1 Byte)，送出的資料為何？",
+        type: "text",
+        answer: "11100100010"
+    },
+    {
+        q: "【ErrorControl】傳送資料\"11100100\"採用 漢明碼 (1 Byte)，總共應送出多少位元？",
+        type: "text",
+        answer: "12"
+    },
+    {
+        q: "【ErrorControl】傳送資料\"11100100\"採用 漢明碼 (1 Byte)，送出的資料為何？",
+        type: "text",
+        answer: "111010100011"
+    },
+    {
+        q: "【ErrorControl】傳送 ASCII \"Hi\" (Hex=48 & 69) 採用 Even Parity (2 Byte)，總共應送出多少位元？",
+        type: "text",
+        answer: "17"
+    },
+    {
+        q: "【ErrorControl】傳送 ASCII \"Hi\" (Hex=48 & 69) 採用 Even Parity (2 Byte)，送出的資料為何？",
+        type: "text",
+        answer: "01001000011010010"
+    },
+    {
+        q: "【ErrorControl】傳送 ASCII \"Hi\" (Hex=48 & 69) 採用 8 bit Checksum (2 Byte)，總共應送出多少位元？",
+        type: "text",
+        answer: "24"
+    },
+    {
+        q: "【ErrorControl】傳送 ASCII \"Hi\" (Hex=48 & 69) 採用 8 bit Checksum (2 Byte)，送出的資料為何？",
+        type: "text",
+        answer: "010010000110100101001110"
+    },
+    {
+        q: "【ErrorControl】傳送 ASCII \"Hi\" (Hex=48 & 69) 採用 CRC (x4 + x + 1) (2 Byte)，總共應送出多少位元？",
+        type: "text",
+        answer: "20"
+    },
+    {
+        q: "【ErrorControl】傳送 ASCII \"Hi\" (Hex=48 & 69) 採用 CRC (x4 + x + 1) (2 Byte)，送出的資料為何？",
+        type: "text",
+        answer: "01001000011010011100"
+    },
+    {
+        q: "【ErrorControl】傳送 ASCII \"Hi\" (Hex=48 & 69) 採用 漢明碼 (2 Byte)，總共應送出多少位元？",
+        type: "text",
+        answer: "21"
+    },
+    {
+        q: "【ErrorControl】傳送 ASCII \"Hi\" (Hex=48 & 69) 採用 漢明碼 (2 Byte)，送出的資料為何？",
+        type: "text",
+        answer: "010010000011001000100"
+    },
+    {
+        q: "下列何者屬於第二層(資料鏈結層)的設備 ?",
+        type: "radio",
+        options: {A: "Repeater(中繼器)", B: "Bridge(橋接器)", C: "Router(路由器)", D: "Gateway(閘道器)"},
+        answer: ["B"]
+    },
+    {
+        q: "下列哪一種設備可以延伸網路，但不會擴大碰撞領域，只是無法阻隔廣播封包?",
+        type: "radio",
+        options: {A: "Repeater(中繼器)", B: "Bridge(橋接器)", C: "Router(路由器)", D: "Gateway(閘道器)"},
+        answer: ["B"]
+    },
+    {
+        q: "下列哪種Division Multiplexing(分割多工)的技術只能用在光纖上?",
+        type: "radio",
+        options: {A: "WDM", B: "FDM", C: "LDM", D: "CDM", E: "TDM"},
+        answer: ["A"]
+    },
+    {
+        q: "倘若傳送端要傳送1個Byte資料給接收端，若傳送端與接收端皆採用CRC(函數為x5 + x + 1)檢查，每個傳送單位為1個Byte，請問傳送端要送出多少bits?",
+        type: "radio",
+        options: {A: "9", B: "8", C: "13", D: "10", E: "12", F: "3", G: "4"},
+        answer: ["C"]
+    },
+    {
+        q: "下列何者屬於第三層(網路層)的設備 ?",
+        type: "radio",
+        options: {A: "Gateway(閘道器)", B: "Repeater(中繼器)", C: "Bridge(橋接器)", D: "Router(路由器)"},
+        answer: ["D"]
+    },
+    {
+        q: "倘若傳送端要傳送1個Byte資料給接收端，若傳送端與接收端皆採用漢明碼(Hamming code)檢查，每個傳送單位為1個Byte，請問傳送端要送出多少bits?",
+        type: "radio",
+        options: {A: "10", B: "8", C: "5", D: "9", E: "13", F: "4", G: "12"},
+        answer: ["G"]
+    },
+    {
+        q: "下列哪一種設備不會擴大碰撞領域，也可以阻隔廣播封包?",
+        type: "radio",
+        options: {A: "Router(路由器)", B: "Repeater(中繼器)", C: "Gateway(閘道器)", D: "Bridge(橋接器)"},
+        answer: ["A"]
+    },
+    {
+        q: "假設在一條100Mbps的傳輸通道上,有10個使用者利用Synchronous(同步式)TDM作法來傳輸資料,則一個使用者最快的傳輸速度為多少Mbps?",
+        type: "radio",
+        options: {A: "1000", B: "1", C: "10", D: "100", E: "以上皆非"},
+        answer: ["C"]
+    },
+    {
+        q: "常用來進行錯誤碼更正的方法為",
+        type: "radio",
+        options: {A: "PCM", B: "Hamming code", C: "Parity check", D: "Checksum"},
+        answer: ["B"]
+    },
+    {
+        q: "下列哪些技術可以執行錯誤偵測? (ps.不用管效率及成效優劣，含只能測錯1個位元)",
+        type: "checkbox",
+        options: {A: "Hamming code", B: "Checksum", C: "Parity check", D: "PCM", E: "CRC"},
+        answer: ["A", "B", "C", "E"]
+    },
+    {
+        q: "倘若傳送端要傳送1個Byte資料給接收端，若傳送端與接收端皆採用Odd Parity check，每個傳送單位為1個Byte，請問傳送端要送出多少bits?",
+        type: "radio",
+        options: {A: "9", B: "8", C: "12", D: "10", E: "13"},
+        answer: ["A"]
+    },
+    {
+        q: "交換器（Switch）主要運作在OSI模型的哪一層？",
+        type: "radio",
+        options: {A: "傳輸層", B: "資料鏈結層", C: "實體層", D: "網路層"},
+        answer: ["B"]
+    },
+    {
+        q: "最常用來進行資料錯誤檢查的方法為何?",
+        type: "radio",
+        options: {A: "PCM", B: "Parity check", C: "CRC", D: "Checksum"},
+        answer: ["C"]
+    },
+    {
+        q: "常見的網路設備有交換器(Switch)和路由器(Router)，有關其用途及特性說明，下列何者有誤？",
+        type: "radio",
+        options: {A: "路由器連接 IP 不同網段進行封包路徑的配置，相關協定有 BGP、RIP、OSPF", B: "路由器可執行 NAT / DHCP / Firewall / VPN / QoS 功能", C: "L2 及 L3 交換器(Layer 2、Layer 3 Switch)均不可作路徑選擇", D: "交換器依 MAC 位址學習連接不同區域網路，並透過封包篩選切割碰撞區域"},
+        answer: ["C"]
+    },
+    {
+        q: "下列何者屬於第一層(實體層)的設備 ?",
+        type: "radio",
+        options: {A: "Repeater(中繼器)", B: "Gateway(閘道器)", C: "Bridge(橋接器)", D: "Router(路由器)"},
+        answer: ["A"]
+    },
+    {
+        q: "假設在一條100Mbps的傳輸通道上,有10個使用者利用Statical(統計式)TDM作法來傳輸資料,則一個使用者最快的傳輸速度為多少Mbps?",
+        type: "radio",
+        options: {A: "以上皆非", B: "1", C: "100", D: "1000", E: "10"},
+        answer: ["C"]
+    },
+    {
+        q: "使用CRC-16傳送64Byte的資料,若不考慮Header(表頭)資料,請問接收端需收到多少Byte的資料才對?",
+        type: "radio",
+        options: {A: "64", B: "65", C: "66", D: "63"},
+        answer: ["C"]
+    },
+    {
+        q: "一條共享的銅線傳輸媒體，可以使用哪些Division Multiplexing(分割多工)的技術來達成?",
+        type: "checkbox",
+        options: {A: "WDM", B: "TDM", C: "CDM", D: "FDM", E: "LDM"},
+        answer: ["B", "C", "D"]
+    },
+    {
+        q: "倘若傳送端要傳送1個Byte資料給接收端，若傳送端與接收端皆採用2 bit的Checksum，每個傳送單位為1個Byte，請問傳送端要送出多少bits?",
+        type: "radio",
+        options: {A: "9", B: "13", C: "11", D: "12", E: "8", F: "10"},
+        answer: ["F"]
+    }
+];
+
+let examCount = 0;
+let historyRecords = [];
+
+// 初始化題目
+function renderQuiz() {
+    const container = document.getElementById("questionsContainer");
+    let html = "";
+    quizData.forEach((item, index) => {
+        html += `<div class="question-card">
+            <div class="question-title">Q${index + 1}. ${item.q}</div>
+            <div class="options">`;
+        
+        if (item.type === "radio") {
+            for (let key in item.options) {
+                html += `<label><input type="radio" name="q${index}" value="${key}"> ${key}. ${item.options[key]}</label>`;
+            }
+        } else if (item.type === "checkbox") {
+            for (let key in item.options) {
+                html += `<label><input type="checkbox" name="q${index}" value="${key}"> ${key}. ${item.options[key]}</label>`;
+            }
+        } else if (item.type === "text") {
+            html += `<input type="text" name="q${index}" placeholder="請輸入答案...">`;
+        }
+        
+        html += `</div></div>`;
+    });
+    container.innerHTML = html;
+}
+
+// 提交並計分
+function submitQuiz() {
+    examCount++;
+    let score = 0;
+    let total = quizData.length;
+    let detailsHtml = "";
+
+    quizData.forEach((item, index) => {
+        let userAns = [];
+        if (item.type === "radio") {
+            let selected = document.querySelector(`input[name="q${index}"]:checked`);
+            if (selected) userAns.push(selected.value);
+        } else if (item.type === "checkbox") {
+            let selected = document.querySelectorAll(`input[name="q${index}"]:checked`);
+            selected.forEach(el => userAns.push(el.value));
+            userAns.sort();
+        } else if (item.type === "text") {
+            let val = document.querySelector(`input[name="q${index}"]`).value.trim();
+            userAns = val;
+        }
+
+        let correctAns = item.answer;
+        let isCorrect = false;
+
+        if (item.type === "checkbox") {
+            // 複選只要錯1個就是全錯 (比對陣列是否完全相符)
+            if (JSON.stringify(userAns) === JSON.stringify([...correctAns].sort())) {
+                isCorrect = true;
+            }
+        } else if (item.type === "text") {
+            if (userAns === correctAns) {
+                isCorrect = true;
+            }
+        } else {
+            if (userAns.length === 1 && userAns[0] === correctAns[0]) {
+                isCorrect = true;
+            }
+        }
+
+        if (isCorrect) score++;
+
+        // 整理詳情
+        let userAnsStr = Array.isArray(userAns) ? userAns.join(" ") : (userAns || "(未作答)");
+        let correctAnsStr = Array.isArray(correctAns) ? correctAns.join(" ") : correctAns;
+        
+        detailsHtml += `<div>Q${index + 1}: ${isCorrect ? '<span class="correct">正確</span>' : '<span class="wrong">錯誤</span>'} 
+            | 你的答案: ${userAnsStr} | 正確答案: <span class="correct">${correctAnsStr}</span></div>`;
+    });
+
+    let resultMsg = `第 ${examCount} 次考試結果：得分 ${score} / ${total} 分 (正確率: ${((score/total)*100).toFixed(1)}%)`;
+    
+    // 顯示當次結果
+    let currentResultBox = document.getElementById("currentResult");
+    currentResultBox.style.display = "block";
+    currentResultBox.innerHTML = `<h3>${resultMsg}</h3><div class="ans-explain">${detailsHtml}</div>`;
+
+    // 儲存至歷史紀錄
+    historyRecords.unshift({
+        title: `第 ${examCount} 次考試`,
+        score: `${score} / ${total}`,
+        details: detailsHtml
+    });
+
+    renderHistory();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function renderHistory() {
+    const historyContainer = document.getElementById("historyContainer");
+    let html = "";
+    historyRecords.forEach(rec => {
+        html += `<div class="history-item">
+            <strong>${rec.title}</strong> - 得分: ${rec.score}
+            <div class="ans-explain" style="max-height: 150px; overflow-y: auto; margin-top: 5px;">${rec.details}</div>
+        </div>`;
+    });
+    historyContainer.innerHTML = html;
+}
+
+// 頁面載入時初始化
+window.onload = renderQuiz;
+</script>
+
 </body>
 </html>
